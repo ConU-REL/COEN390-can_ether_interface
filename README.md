@@ -7,3 +7,4 @@
 
   https://github.com/rogerclarkmelbourne/Arduino_STM32/tree/master/STM32F1/libraries/Serasidis_EtherCard_STM
   https://github.com/njh/EtherCard
+  https://github.com/Seeed-Studio/CAN_BUS_Shield
