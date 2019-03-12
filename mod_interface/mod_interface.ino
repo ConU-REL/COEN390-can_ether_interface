@@ -26,7 +26,7 @@ unsigned int can_timeout = 10000;
 
 // variables for receiving CAN messages
 uint8_t recv_len;
-uint8_t recv_msg [8];
+uint8_t recv_msg [9];
 
 // data variables that will contain informatino about the vehicle
 float voltage;
@@ -40,9 +40,11 @@ void setup(){
   while(Serial.read() <= 0);
   Serial.println("Serial connected.");
 
+/*
   // initialize ethernet module
   if (ether.begin(sizeof Ethernet::buffer, mymac, ETHER_CS) == 0)
     Serial.println(("Failed to access Ethernet controller"));
+*/
 
   // attempt connection to CAN bus module until it works
   while(!(CAN_OK == CAN.begin(CAN_1000KBPS, MCP_CS))){
@@ -59,6 +61,28 @@ void setup(){
 
   // code to send messages on CAN, will be used eventually
   //CAN.sendMsgBuf(transmit_id, 0, 4, buff);
+}
+
+
+void loop(){
+  // when CAN message is available, receive and process it
+  if(CAN_MSGAVAIL == CAN.checkReceive())
+  {
+    CAN_RECEIVE();
+    Serial.print(gear); Serial.print("\t");
+    Serial.print(launch); Serial.print("\t");
+    Serial.print(traction); Serial.print("\t");
+    Serial.print(autoshift); Serial.print("\t");
+    Serial.print(rpm); Serial.print("\t");
+    Serial.print(voltage); Serial.print("\t");
+    Serial.println();
+
+    last_can_update = c_time;
+  }
+  else if((c_time - last_can_update > can_timeout))
+  {
+    // TODO add case for CAN timeout
+  }
 }
 
 // function to receive and process CAN messages
@@ -86,18 +110,5 @@ void CAN_RECEIVE()
   else if(CAN.getCanId() == recv_id + 2)
   {
     f_temp = (recv_msg[0] * 4);
-  }
-}
-
-void loop(){
-  // when CAN message is available, receive and process it
-  if(CAN_MSGAVAIL == CAN.checkReceive())
-  {
-    CAN_RECEIVE();
-    last_can_update = c_time;
-  }
-  else if((c_time - last_can_update > can_timeout))
-  {
-    // TODO add case for CAN timeout
   }
 }
