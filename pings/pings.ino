@@ -28,13 +28,13 @@ static byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 byte Ethernet::buffer[700];
 
 static uint32_t timer;
-static byte myip[] = { 10,10,10,4 };
+static byte myip[] = { 10,10,10,20 };
 
 // gateway ip address
-static byte gwip[] = { 10,10,10,1 };
+static byte gwip[] = { 10,10,10,10 };
 
 // domain name server (dns) address
-static byte dnsip[] = { 10,10,10,1 };
+static byte dnsip[] = { 10,10,10,10 };
 
 // called when a ping comes in (replies to it are automatic)
 static void gotPinged (byte* ptr) {

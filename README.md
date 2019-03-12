@@ -8,3 +8,6 @@
   https://github.com/rogerclarkmelbourne/Arduino_STM32/tree/master/STM32F1/libraries/Serasidis_EtherCard_STM
   https://github.com/njh/EtherCard
   https://github.com/Seeed-Studio/CAN_BUS_Shield
+  https://github.com/stm32duino/STM32Examples
+  https://github.com/UIPEthernet/UIPEthernet
+  https://github.com/stm32duino/LwIP.git
