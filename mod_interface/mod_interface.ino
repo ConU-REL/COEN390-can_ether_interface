@@ -1,10 +1,11 @@
+#include <Arduino.h>
 #include <mcp_can_stm.h>
 #include <SPI.h>
-#include <EtherCard_STM.h>
+#include <UIPEthernet.h>
+#include "PubSubClient.h"
 
 // pinout definitions
 #define MCP_CS PB12
-#define ETHER_CS PA8
 
 // declare listen address for CAN Bus
 #define recv_id 0x90
@@ -13,9 +14,25 @@
 // declare CAN bus object
 MCP_CAN CAN;
 
-// define mac address for ethernet module
-static byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-byte Ethernet::buffer[700];
+// ethernet and MQTT defs
+
+#define CLIENT_ID "MOD_CAN"
+#define PUBLISH_DELAY 1000
+
+// module mac address
+uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+// module ip addr
+IPAddress ip_mod(10, 10, 10, 20);
+// MQTT server addr
+IPAddress ip_srv(10, 10, 10, 10);
+// gateway ip address
+IPAddress ip_gw(10, 10, 10, 10);
+// domain name server (dns) address
+IPAddress ip_dns(10, 10, 10, 10);
+
+EthernetClient ethClient;
+PubSubClient mqttClient;
+
 
 // current time
 long unsigned int c_time = millis();
@@ -34,17 +51,10 @@ int v_int, v_fl, o_temp, o_press, c_temp, f_press, f_temp, gear, rpm;
 bool launch, traction, autoshift, remote_start;
 
 void setup(){
-
   Serial.begin(115200);
   // wait for user input before starting
   while(Serial.read() <= 0);
   Serial.println("Serial connected.");
-
-/*
-  // initialize ethernet module
-  if (ether.begin(sizeof Ethernet::buffer, mymac, ETHER_CS) == 0)
-    Serial.println(("Failed to access Ethernet controller"));
-*/
 
   // attempt connection to CAN bus module until it works
   while(!(CAN_OK == CAN.begin(CAN_1000KBPS, MCP_CS))){
@@ -61,14 +71,43 @@ void setup(){
 
   // code to send messages on CAN, will be used eventually
   //CAN.sendMsgBuf(transmit_id, 0, 4, buff);
+
+  // initialize ethernet
+  Ethernet.begin(mac, ip_mod);
+
+  Serial.print("Link status: ");
+  Serial.println(Ethernet.linkStatus() == LinkON);
+
+  // print IP
+  Serial.println(Ethernet.localIP().toString());
+  //Serial.println(ethClient.connect(ip_srv, 1883));
+  Serial.print("Link status: ");
+  Serial.println(Ethernet.linkStatus() == LinkON);
+
+
+  // connect to MQTT server
+  mqttClient.setClient(ethClient);
+  mqttClient.setServer(ip_srv, 1883);
+
+
+  while(!mqttClient.connected()){
+    Serial.println("Attempting connection to MQTT Broker");
+    Serial.println(mqttClient.connect(CLIENT_ID));
+    if(mqttClient.connect(CLIENT_ID)){
+      Serial.println("MQTT Connection failed");
+    } else {
+      Serial.println("MQTT Connection successful");
+    }
+    delay(100);
+  }
 }
 
 
 void loop(){
   // when CAN message is available, receive and process it
-  if(CAN_MSGAVAIL == CAN.checkReceive())
-  {
+  if(CAN_MSGAVAIL == CAN.checkReceive()){
     CAN_RECEIVE();
+    MQTT_PUSH();
     Serial.print(gear); Serial.print("\t");
     Serial.print(launch); Serial.print("\t");
     Serial.print(traction); Serial.print("\t");
@@ -78,11 +117,11 @@ void loop(){
     Serial.println();
 
     last_can_update = c_time;
-  }
-  else if((c_time - last_can_update > can_timeout))
-  {
+  } else if((c_time - last_can_update) > can_timeout){
     // TODO add case for CAN timeout
   }
+  mqttClient.loop();  // keepalive
+
 }
 
 // function to receive and process CAN messages
@@ -111,4 +150,19 @@ void CAN_RECEIVE()
   {
     f_temp = (recv_msg[0] * 4);
   }
+}
+
+
+void MQTT_PUSH(){
+  String tmp = "{\"rpm\":" + String(rpm);
+  tmp = tmp + ", ";
+  tmp = tmp + "\"oil_temp\":" + String(o_temp);
+  tmp = tmp + ", ";
+  tmp = tmp + "\"coolant_temp\":" + String(c_temp);
+  tmp = tmp + ", ";
+  tmp = tmp + "\"fuel_pressure\":" + String(f_press);
+  tmp = tmp + "}";
+
+  Serial.println(tmp);
+  mqttClient.publish("sensors/critical", tmp.c_str());
 }
