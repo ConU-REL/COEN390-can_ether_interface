@@ -6,8 +6,23 @@
 
 
   https://github.com/rogerclarkmelbourne/Arduino_STM32/tree/master/STM32F1/libraries/Serasidis_EtherCard_STM
+  
   https://github.com/njh/EtherCard
+  
   https://github.com/Seeed-Studio/CAN_BUS_Shield
+  
   https://github.com/stm32duino/STM32Examples
+  
   https://github.com/UIPEthernet/UIPEthernet
+  
   https://github.com/stm32duino/LwIP.git
+  
+  https://github.com/knolleary/pubsubclient
+
+  https://pubsubclient.knolleary.net/api.html#publish1
+
+  http://mosquitto.org/man/mosquitto-8.html
+  
+  http://www.scalagent.com/IMG/pdf/Benchmark_MQTT_servers-v1-1.pdf
+  
+  
