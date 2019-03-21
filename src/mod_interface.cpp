@@ -3,6 +3,7 @@
 #include <SPI.h>
 #include <UIPEthernet.h>
 #include "PubSubClient.h"
+//#include <ArduinoJson.h>
 
 // pinout definitions
 #define MCP_CS PB12
@@ -22,13 +23,13 @@ MCP_CAN CAN;
 // module mac address
 uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
 // module ip addr
-IPAddress ip_mod(10, 10, 10, 20);
+IPAddress ip_mod(10, 0, 22, 20);
 // MQTT server addr
-IPAddress ip_srv(10, 10, 10, 10);
+IPAddress ip_srv(10, 0, 22, 10);
 // gateway ip address
-IPAddress ip_gw(10, 10, 10, 10);
+IPAddress ip_gw(10, 0, 22, 1);
 // domain name server (dns) address
-IPAddress ip_dns(10, 10, 10, 10);
+IPAddress ip_dns(10, 0, 22, 1);
 
 EthernetClient ethClient;
 PubSubClient mqttClient;
@@ -94,12 +95,12 @@ void setup(){
     Serial.println("Attempting connection to MQTT Broker");
     Serial.println(mqttClient.connect(CLIENT_ID));
     if(mqttClient.connect(CLIENT_ID)){
-      Serial.println("MQTT Connection failed");
-    } else {
-      Serial.println("MQTT Connection successful");
+      Serial.println("MQTT Connection failed, retrying");
     }
     delay(100);
   }
+  Serial.println("MQTT Connection successful");
+
 }
 
 // function prototypes
@@ -107,6 +108,7 @@ void CAN_RECEIVE();
 void MQTT_PUSH();
 
 void loop(){
+  c_time = millis();
   // when CAN message is available, receive and process it
   if(CAN_MSGAVAIL == CAN.checkReceive()){
     CAN_RECEIVE();
@@ -121,7 +123,7 @@ void loop(){
 
     last_can_update = c_time;
   } else if((c_time - last_can_update) > can_timeout){
-    // TODO: add case for CAN timeout
+      mqttClient.publish("status/module", "{\"ecu_conn\":0}");
   }
   mqttClient.loop();  // keepalive
 
@@ -168,4 +170,6 @@ void MQTT_PUSH(){
 
   Serial.println(tmp);
   mqttClient.publish("sensors/critical", tmp.c_str());
+  mqttClient.publish("status/module", "{\"ecu_conn\":1}");
+
 }
