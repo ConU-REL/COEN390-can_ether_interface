@@ -3,7 +3,8 @@
 #include <SPI.h>
 #include <UIPEthernet.h>
 #include "PubSubClient.h"
-//#include <ArduinoJson.h>
+#define ARDUINOJSON_ENABLE_PROGMEM 0
+#include <ArduinoJson.h>
 
 // pinout definitions
 #define MCP_CS PB12
@@ -14,6 +15,10 @@
 
 // declare CAN bus object
 MCP_CAN CAN;
+
+DynamicJsonDocument critical(1024);
+DynamicJsonDocument non_critical(1024);
+
 
 // ethernet and MQTT defs
 
@@ -40,7 +45,10 @@ long unsigned int c_time = millis();
 // timer to check if CAN has timed out
 long unsigned int last_can_update = 0;
 // define what constitutes a timeout
-unsigned int can_timeout = 10000;
+unsigned int can_timeout = 5000;
+
+bool curr_can_status = 0;
+bool last_can_status = 1;
 
 // variables for receiving CAN messages
 uint8_t recv_len;
@@ -50,6 +58,7 @@ uint8_t recv_msg [9];
 float voltage;
 int v_int, v_fl, o_temp, o_press, c_temp, f_press, f_temp, gear, rpm;
 bool launch, traction, autoshift, remote_start;
+
 
 void setup(){
   Serial.begin(115200);
@@ -76,12 +85,7 @@ void setup(){
   // initialize ethernet
   Ethernet.begin(mac, ip_mod);
 
-  Serial.print("Link status: ");
-  Serial.println(Ethernet.linkStatus() == LinkON);
-
-  // print IP
-//  Serial.println(Ethernet.localIP().toString());
-  //Serial.println(ethClient.connect(ip_srv, 1883));
+  Serial.println(ENC28J60ControlCS);
   Serial.print("Link status: ");
   Serial.println(Ethernet.linkStatus() == LinkON);
 
@@ -113,6 +117,7 @@ void loop(){
   if(CAN_MSGAVAIL == CAN.checkReceive()){
     CAN_RECEIVE();
     MQTT_PUSH();
+    /*
     Serial.print(gear); Serial.print("\t");
     Serial.print(launch); Serial.print("\t");
     Serial.print(traction); Serial.print("\t");
@@ -120,10 +125,19 @@ void loop(){
     Serial.print(rpm); Serial.print("\t");
     Serial.print(voltage); Serial.print("\t");
     Serial.println();
-
+    */
     last_can_update = c_time;
+    curr_can_status = 1;
+    if(curr_can_status != last_can_status){
+      last_can_status = curr_can_status;
+      mqttClient.publish("status/module", "{\"ecu_conn\":1}");
+    }
   } else if((c_time - last_can_update) > can_timeout){
+    curr_can_status = 0;
+    if(curr_can_status != last_can_status){
+      last_can_status = curr_can_status;
       mqttClient.publish("status/module", "{\"ecu_conn\":0}");
+    }
   }
   mqttClient.loop();  // keepalive
 
@@ -131,6 +145,7 @@ void loop(){
 
 // function to receive and process CAN messages
 void CAN_RECEIVE()
+
 {
   // read the buffer, write data into data vars
   CAN.readMsgBuf(&recv_len, recv_msg);
@@ -159,17 +174,22 @@ void CAN_RECEIVE()
 
 
 void MQTT_PUSH(){
-  String tmp = "{\"rpm\":" + String(rpm);
-  tmp = tmp + ", ";
-  tmp = tmp + "\"oil_temp\":" + String(o_temp);
-  tmp = tmp + ", ";
-  tmp = tmp + "\"coolant_temp\":" + String(c_temp);
-  tmp = tmp + ", ";
-  tmp = tmp + "\"fuel_pressure\":" + String(f_press);
-  tmp = tmp + "}";
+  String msg;
+  critical["rpm"] = rpm;
+  critical["oil_temp"]   = o_temp;
+  critical["coolant_temp"]   = c_temp;
+  critical["fuel_pressure"]   = f_press;
+  critical["oil_pressure"]   = o_press;
 
-  Serial.println(tmp);
-  mqttClient.publish("sensors/critical", tmp.c_str());
-  mqttClient.publish("status/module", "{\"ecu_conn\":1}");
+  serializeJson(critical, msg);
+  Serial.println(msg);
+  mqttClient.publish("sensors/critical", msg.c_str());
 
+  non_critical["gear"] = gear;
+  non_critical["launch"] = launch ? 1 : 0;
+  non_critical["voltage"] = voltage;
+  msg = "";
+  serializeJson(non_critical, msg);
+  Serial.println(msg);
+  mqttClient.publish("sensors/non_critical", msg.c_str());
 }
