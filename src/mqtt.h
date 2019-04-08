@@ -23,6 +23,7 @@ void MQTT_PUSH(){
 
 // subscribed topic callback function
 void callback(char* topic, uint8_t* payload, unsigned int length){
+  String topic_str = String(topic);
   char msg [length];
 
   for(int i=0; i < length; i++){
@@ -35,15 +36,17 @@ void callback(char* topic, uint8_t* payload, unsigned int length){
     Serial.println(error.c_str());
     return;
   }
-
-  cranking = instructions["crank"];
-  if(!cranking){
-    crank(1);
-    //set_cranking(0);
+  if(topic_str == "control/engine"){
+    cranking = instructions["crank"];
+    if(!cranking){
+      crank(1);
+    }
   }
 
-  pumping = instructions["pump"];
-  if(!pumping){
-    set_pumping(0);
+  if(topic_str == "control/fuel_pump"){
+    pumping = instructions["pump"];
+    if(!pumping){
+      pump(1);
+    }
   }
 }

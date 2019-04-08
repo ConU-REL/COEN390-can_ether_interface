@@ -40,4 +40,7 @@ void init_connection() {
 
   // subscribe to the topic which will have engine instructions
   mqttClient.subscribe("control/engine", 0);
+  mqttClient.subscribe("control/fuel_pump", 0);
+  mqttClient.subscribe("control/comms", 0);
+
 }

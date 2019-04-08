@@ -47,6 +47,7 @@ long unsigned int last_can_update = 0;
 // define what constitutes a timeout
 unsigned int can_timeout = 5000;
 
+
 // can bus status vars
 bool curr_can_status = 0;
 bool last_can_status = 0;

@@ -44,15 +44,15 @@ void loop(){
     }
   }
   mqttClient.loop();  // keepalive
-  if(cranking){
-    crank();
-  }
+  if(cranking){crank();}
+  if(pumping){pump();}
+
 }
 
 
-void crank(bool kill){
+void crank(bool stop){
   c_time = millis();
-  if(kill){
+  if(stop){
     // stop cranking
     Serial.println("Sending instruction to stop cranking");
     time_cranking = 0;
@@ -65,8 +65,7 @@ void crank(bool kill){
     Serial.println("Sending instruction to start cranking");
     time_cranking = c_time;
     set_cranking(1);
-
-  } else if((c_time - time_cranking > max_time_cranking)){
+  } else if(c_time - time_cranking > max_time_cranking){
     // stop cranking
     Serial.println("Sending instruction to stop cranking");
     time_cranking = 0;
@@ -82,8 +81,17 @@ void set_cranking(bool state){
 }
 
 
-void pump(){
+void pump(bool stop){
   c_time = millis();
+
+  if(stop){
+    // stop the pump
+    Serial.println("Sending instruction to stop pump");
+    time_pumping = 0;
+    pumping = 0;
+    set_pumping(0);
+    return;
+  }
   if(time_pumping == 0){
     // start the pump
     Serial.println("Sending instruction to start the pump");
@@ -100,5 +108,6 @@ void pump(){
 
 
 void set_pumping(bool state){
-  status = state ? (status | 0b00010000) : (status & 11101111);
+  status = state ? (status | 0b00001000) : (status & 0b11110111);
+  CAN_SEND();
 }
