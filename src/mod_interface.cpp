@@ -4,11 +4,11 @@
 #include "canbus.h"
 #include "mqtt.h"
 
-
 void setup(){
   Serial.begin(115200);
   // wait for user input before starting
-  while(Serial.read() <= 0);
+  //while(Serial.read() <= 0);
+  delay(5000);
   Serial.println("Serial connected.");
 
   // initialize modules

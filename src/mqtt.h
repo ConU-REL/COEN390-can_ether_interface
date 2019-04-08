@@ -49,4 +49,12 @@ void callback(char* topic, uint8_t* payload, unsigned int length){
       pump(1);
     }
   }
+
+  if(topic_str == "control/comms"){
+    uint8_t flag = instructions["flag"];
+    status = (status & 0b10001111) | (flag << 4);
+    Serial.print("Sending flag instruction: ");
+    Serial.println(status, BIN);
+    CAN_SEND();
+  }
 }
