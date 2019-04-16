@@ -74,3 +74,8 @@ unsigned int max_time_cranking = 5000;
 bool pumping = 0;
 unsigned int time_pumping = 0;
 unsigned int max_time_pumping = 5000;
+
+
+// keepalive
+unsigned int time_last_keepalive = 0;
+unsigned int time_keepalive_interval = 2000;

@@ -47,6 +47,7 @@ void loop(){
   if(cranking){crank();}
   if(pumping){pump();}
 
+  keepalive();
 }
 
 

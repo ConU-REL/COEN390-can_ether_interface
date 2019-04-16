@@ -8,3 +8,4 @@ void crank(bool stop = false);
 void set_cranking(bool);
 void pump(bool stop = false);
 void set_pumping(bool);
+void keepalive();

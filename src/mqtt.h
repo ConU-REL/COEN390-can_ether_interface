@@ -58,3 +58,13 @@ void callback(char* topic, uint8_t* payload, unsigned int length){
     CAN_SEND();
   }
 }
+
+
+void keepalive(){
+  c_time = millis();
+  if(c_time - time_last_keepalive > time_keepalive_interval){
+    String msg = "{\"ecu_conn\":" + String(curr_can_status) + "}";
+    mqttClient.publish("status/module", msg.c_str());
+    time_last_keepalive = c_time;
+  }
+}
